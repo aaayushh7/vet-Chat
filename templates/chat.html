@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Petcare AI - Veterinary Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.5.0/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://unpkg.com/aos@next/dist/aos.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/1da99de032.js" crossorigin="anonymous"></script>
+    <style>
+        .chat-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .source-link {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="bg-base-200">
+    <div class="drawer lg:drawer-open">
+        <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content flex flex-col items-center justify-center">
+            <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden absolute top-2 left-2">
+                <i class="fas fa-bars"></i>
+            </label>
+
+            <div class="container mx-auto p-4">
+                <div id="main-bg" class="text-center" data-aos="fade-up">
+                    <div class="hero min-h-screen bg-base-200">
+                        <div class="hero-content text-center">
+                            <div class="max-w-md">
+                                <h1 class="text-5xl font-bold mb-4">🐶 Petcare AI</h1>
+                                <p class="py-6 text-xl">Your One-stop Solution for your Little Fur Baby</p>
+                                <button class="btn btn-primary" onclick="startChat()">Start Chat</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="chat-response-box" class="hidden mt-8 h-[calc(100vh-200px)] overflow-y-auto"></div>
+                <div id="chat-input-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-3xl">
+                    <div class="form-control">
+                        <div class="input-group">
+                            <input type="text" id="user-input" placeholder="Ask anything about pet care..." class="input input-bordered w-full" />
+                            <button id="send-btn" class="btn btn-square">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> 
+        <div class="drawer-side">
+            <label for="my-drawer-2" class="drawer-overlay"></label> 
+            <ul class="menu p-4 w-80 h-full bg-base-200 text-base-content">
+                <li class="mb-4">
+                    <h2 class="text-2xl font-bold">🐾 Petcare AI</h2>
+                </li>
+                <li><a><i class="fas fa-home mr-2"></i> Home</a></li>
+                <li><a><i class="fas fa-history mr-2"></i> Chat History</a></li>
+                <li><a><i class="fas fa-cog mr-2"></i> Settings</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script>
+        AOS.init();
+
+        const chatResponseBox = document.getElementById('chat-response-box');
+        const mainBg = document.getElementById('main-bg');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function startChat() {
+            mainBg.classList.add('hidden');
+            chatResponseBox.classList.remove('hidden');
+            userInput.focus();
+        }
+
+        function sendMessage() {
+            const userInputValue = userInput.value.trim();
+            if (userInputValue === "") {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Oops!',
+                    text: "Please enter your question.",
+                    confirmButtonColor: "#570DF8"
+                });
+            } else {
+                appendMessage('human', userInputValue);
+                showTypingIndicator();
+                
+                const formData = new FormData();
+                formData.append('prompt', userInputValue);
+                
+                userInput.value = '';
+                
+                fetch('/chat_response', {
+                    method: "POST",
+                    body: formData                
+                })
+                .then(response => processChatResponse(response))
+                .catch(error => {
+                    console.error('Error:', error);
+                    appendMessage('bot', "I'm sorry, an error occurred. Please try again later.");
+                })
+                .finally(() => {
+                    removeTypingIndicator();
+                });
+            }
+        }
+
+        function appendMessage(sender, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat', sender === 'human' ? 'chat-end' : 'chat-start', 'mb-4');
+            messageDiv.setAttribute('data-aos', 'fade-up');
+            messageDiv.innerHTML = `
+                <div class="chat-image avatar">
+                    <div class="w-10 rounded-full">
+                        <img src="../static/assets/images/${sender}-avatar.png" alt="${sender} avatar" />
+                    </div>
+                </div>
+                <div class="chat-header">
+                    ${sender === 'human' ? 'You' : 'Petcare AI'}
+                </div>
+                <div class="chat-bubble">${message}</div>
+            `;
+            chatResponseBox.appendChild(messageDiv);
+            chatResponseBox.scrollTop = chatResponseBox.scrollHeight;
+            AOS.refresh();
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.classList.add('chat', 'chat-start', 'mb-4');
+            typingDiv.innerHTML = `
+                <div class="chat-image avatar">
+                    <div class="w-10 rounded-full">
+                        <img src="../static/assets/images/bot-avatar.png" alt="Bot avatar" />
+                    </div>
+                </div>
+                <div class="chat-header">
+                    Petcare AI
+                </div>
+                <div class="chat-bubble">
+                    <span class="loading loading-dots loading-sm"></span>
+                </div>
+            `;
+            chatResponseBox.appendChild(typingDiv);
+            chatResponseBox.scrollTop = chatResponseBox.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        async function processChatResponse(response) {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const json = await response.json();
+            const chatResult = json.answer.replace(/\n/g, "<br>");
+            appendMessage('bot', chatResult);
+            
+            if (json.source_documents_list && json.source_documents_list.length > 0) {
+                const sourceLink = document.createElement('div');
+                sourceLink.classList.add('source-link');
+                sourceLink.innerHTML = `
+                    <a href="../static/${json.source_documents_list[0]}" target="_blank" class="link link-primary">
+                        View Source: ${extractFilename(json.source_documents_list[0])}
+                    </a>
+                    <span class="ml-2 badge badge-secondary">Page ${json.page_number_list[0]}</span>
+                `;
+                chatResponseBox.lastElementChild.appendChild(sourceLink);
+            }
+        }
+
+        function extractFilename(path) {
+            return path.split("/").pop();
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
