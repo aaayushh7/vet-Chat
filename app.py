@@ -22,7 +22,7 @@ app = FastAPI()
 
 # Configure templates
 templates = Jinja2Templates(directory="templates")
-
+q
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Load model and tokenizer
@@ -53,6 +53,7 @@ def truncate_text(text, max_tokens=450):
         tokens = tokens[:max_tokens]
         text = tokenizer.decode(tokens)
     return text
+
 def query_model(prompt: str):
     try:
         truncated_prompt = truncate_text(prompt)
