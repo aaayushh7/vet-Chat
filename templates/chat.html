@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
     <link href="https://unpkg.com/aos@next/dist/aos.css" rel="stylesheet">
     <script src="https://kit.fontawesome.com/1da99de032.js" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <style>
         .chat-message {
             max-width: 80%;
@@ -69,6 +70,43 @@
         #chat-input-box {
             z-index: 10;
         }
+        .custom-mt-2 {
+            margin-top: 2px;
+        }
+        .custom-mt-2 {
+            margin-top: 2px;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Space between text and loading dots */
+        }
+        
+        .typing-text {
+            font-size: 1rem; /* Adjust font size as needed */
+            color: #555; /* Adjust color to match your theme */
+            font-weight: bold;
+        }
+        
+        .loading-dots {
+            animation: dots 1.5s infinite; /* Ensure dots animation */
+        }
+        
+        @keyframes dots {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -80,6 +118,7 @@
             </label>
 
             <div class="container mx-auto p-4">
+                <div class="google_translate_element"></div>
                 <div id="main-bg" class="text-center" data-aos="fade-up">
                     <div class="hero min-h-screen bg-base-200">
                         <div class="hero-content text-center">
@@ -93,7 +132,8 @@
                 </div>
                 <div id="chat-response-box" class="hidden mt-8 h-[calc(100vh-200px)] overflow-y-auto px-4 pb-20"></div>
 
-                <div id="chat-input-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 bg-gray-100">                    <div class="form-control">
+                <div id="chat-input-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 bg-gray-100">
+                    <div class="form-control">
                         <div class="input-group">
                             <input type="text" id="user-input" placeholder="Ask anything about pet care..." class="input input-bordered w-full" />
                             <button id="send-btn" class="btn btn-primary">
@@ -113,9 +153,19 @@
                 <li><a><i class="fas fa-home mr-2"></i> Home</a></li>
                 <li><a><i class="fas fa-history mr-2"></i> Chat History</a></li>
                 <li><a><i class="fas fa-cog mr-2"></i> Settings</a></li>
+                <li>
+                    <select id="language-selector" class="select select-bordered w-full max-w-xs">
+                        <option value="" selected disabled>Select Language</option>
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="bn">বাংলা</option>
+                    </select>
+                </li>
             </ul>
         </div>
     </div>
+
+    <div id="google_translate_element" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -205,9 +255,12 @@
             typingDiv.id = 'typing-indicator';
             typingDiv.classList.add('chat-message', 'bot-message', 'fade-in');
             typingDiv.innerHTML = `
-                <div class="font-bold mb-1">Petcare AI</div>
-                <div><span class="loading loading-dots loading-sm"></span></div>
-            `;
+            <div class="font-bold mb-1">Petcare</div>
+            <div class="typing-indicator">
+                <span class="typing-text">AI is thinking</span>
+                <span class="loading loading-dots loading-sm custom-mt-2"></span>
+            </div>
+        `;
             chatResponseBox.appendChild(typingDiv);
             chatResponseBox.scrollTop = chatResponseBox.scrollHeight;
         }
@@ -248,6 +301,42 @@
                 event.preventDefault();
                 sendMessage();
             }
+        });
+
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,es,fr,de,it,ja,ko,zh-CN,bn',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+        
+        document.getElementById('language-selector').addEventListener('change', function() {
+            var lang = this.value;
+            var gtCombo = document.querySelector('.goog-te-combo');
+            if (gtCombo) {
+                gtCombo.value = lang;
+                gtCombo.dispatchEvent(new Event('change'));
+            }
+            localStorage.setItem('selectedLanguage', lang);
+        });
+        
+        // Set the language on page load if it's stored in localStorage
+        window.addEventListener('load', function() {
+            var storedLang = localStorage.getItem('selectedLanguage');
+            if (storedLang) {
+                var gtCombo = document.querySelector('.goog-te-combo');
+                if (gtCombo) {
+                    gtCombo.value = storedLang;
+                    gtCombo.dispatchEvent(new Event('change'));
+                }
+            }
+        });
+
+        // Store the selected language in localStorage when it changes
+        document.getElementById('language-selector').addEventListener('change', function() {
+            localStorage.setItem('selectedLanguage', this.value);
         });
     </script>
 </body>
