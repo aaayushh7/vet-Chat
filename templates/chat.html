@@ -9,18 +9,69 @@
     <link href="https://unpkg.com/aos@next/dist/aos.css" rel="stylesheet">
     <script src="https://kit.fontawesome.com/1da99de032.js" crossorigin="anonymous"></script>
     <style>
-        .chat-bubble {
+        .chat-message {
             max-width: 80%;
             word-wrap: break-word;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background-color: #f3f4f6;
+            position: relative;
         }
-        .source-link {
-            font-size: 0.8rem;
+        .chat-message::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+        .bot-message::before {
+            background-color: #3b82f6;  /* Blue for bot */
+        }
+        .user-message::before {
+            background-color: #ef4444;  /* Red for user */
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .source-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 0.5rem;
-            display: inline-block;
+            font-size: 0.8rem;
+        }
+        .source-table th, .source-table td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            text-align: left;
+        }
+        .source-table th {
+            background-color: #f2f2f2;
+            color: black;
+        }
+        .source-table td {
+            color: #4b5563;
+        }
+        .source-table a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+        body {
+            padding-bottom: 80px;
+        }
+        
+        #chat-input-box {
+            z-index: 10;
         }
     </style>
 </head>
-<body class="bg-base-200">
+<body class="bg-gray-100">
     <div class="drawer lg:drawer-open">
         <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content flex flex-col items-center justify-center">
@@ -40,12 +91,12 @@
                         </div>
                     </div>
                 </div>
-                <div id="chat-response-box" class="hidden mt-8 h-[calc(100vh-200px)] overflow-y-auto"></div>
-                <div id="chat-input-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-3xl">
-                    <div class="form-control">
+                <div id="chat-response-box" class="hidden mt-8 h-[calc(100vh-200px)] overflow-y-auto px-4 pb-20"></div>
+
+                <div id="chat-input-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-3xl px-4 bg-gray-100">                    <div class="form-control">
                         <div class="input-group">
                             <input type="text" id="user-input" placeholder="Ask anything about pet care..." class="input input-bordered w-full" />
-                            <button id="send-btn" class="btn btn-square">
+                            <button id="send-btn" class="btn btn-primary">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -93,7 +144,7 @@
                     confirmButtonColor: "#570DF8"
                 });
             } else {
-                appendMessage('human', userInputValue);
+                appendMessage('user', userInputValue);
                 showTypingIndicator();
                 
                 const formData = new FormData();
@@ -116,42 +167,46 @@
             }
         }
 
-        function appendMessage(sender, message) {
+        function appendMessage(sender, message, sourceInfo = null) {
             const messageDiv = document.createElement('div');
-            messageDiv.classList.add('chat', sender === 'human' ? 'chat-end' : 'chat-start', 'mb-4');
-            messageDiv.setAttribute('data-aos', 'fade-up');
-            messageDiv.innerHTML = `
-                <div class="chat-image avatar">
-                    <div class="w-10 rounded-full">
-                        <img src="../static/assets/images/${sender}-avatar.png" alt="${sender} avatar" />
-                    </div>
-                </div>
-                <div class="chat-header">
-                    ${sender === 'human' ? 'You' : 'Petcare AI'}
-                </div>
-                <div class="chat-bubble">${message}</div>
+            messageDiv.classList.add('chat-message', `${sender}-message`, 'fade-in');
+            
+            let messageContent = `
+                <div class="font-bold mb-1">${sender === 'user' ? 'You' : 'Petcare AI'}</div>
+                <div>${message}</div>
             `;
+
+            if (sourceInfo) {
+                messageContent += `
+                    <table class="source-table">
+                        <tr>
+                            <th>Source</th>
+                            <th>Page</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="${sourceInfo.link}" target="_blank">
+                                    ${sourceInfo.filename}
+                                </a>
+                            </td>
+                            <td>${sourceInfo.page}</td>
+                        </tr>
+                    </table>
+                `;
+            }
+
+            messageDiv.innerHTML = messageContent;
             chatResponseBox.appendChild(messageDiv);
             chatResponseBox.scrollTop = chatResponseBox.scrollHeight;
-            AOS.refresh();
         }
 
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
             typingDiv.id = 'typing-indicator';
-            typingDiv.classList.add('chat', 'chat-start', 'mb-4');
+            typingDiv.classList.add('chat-message', 'bot-message', 'fade-in');
             typingDiv.innerHTML = `
-                <div class="chat-image avatar">
-                    <div class="w-10 rounded-full">
-                        <img src="../static/assets/images/bot-avatar.png" alt="Bot avatar" />
-                    </div>
-                </div>
-                <div class="chat-header">
-                    Petcare AI
-                </div>
-                <div class="chat-bubble">
-                    <span class="loading loading-dots loading-sm"></span>
-                </div>
+                <div class="font-bold mb-1">Petcare AI</div>
+                <div><span class="loading loading-dots loading-sm"></span></div>
             `;
             chatResponseBox.appendChild(typingDiv);
             chatResponseBox.scrollTop = chatResponseBox.scrollHeight;
@@ -170,19 +225,17 @@
             }
             const json = await response.json();
             const chatResult = json.answer.replace(/\n/g, "<br>");
-            appendMessage('bot', chatResult);
             
+            let sourceInfo = null;
             if (json.source_documents_list && json.source_documents_list.length > 0) {
-                const sourceLink = document.createElement('div');
-                sourceLink.classList.add('source-link');
-                sourceLink.innerHTML = `
-                    <a href="../static/${json.source_documents_list[0]}" target="_blank" class="link link-primary">
-                        View Source: ${extractFilename(json.source_documents_list[0])}
-                    </a>
-                    <span class="ml-2 badge badge-secondary">Page ${json.page_number_list[0]}</span>
-                `;
-                chatResponseBox.lastElementChild.appendChild(sourceLink);
+                sourceInfo = {
+                    link: `../static/${json.source_documents_list[0]}`,
+                    filename: extractFilename(json.source_documents_list[0]),
+                    page: json.page_number_list[0]
+                };
             }
+
+            appendMessage('bot', chatResult, sourceInfo);
         }
 
         function extractFilename(path) {
