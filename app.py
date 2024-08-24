@@ -53,17 +53,35 @@ def truncate_text(text, max_tokens=450):
         tokens = tokens[:max_tokens]
         text = tokenizer.decode(tokens)
     return text
-
 def query_model(prompt: str):
     try:
         truncated_prompt = truncate_text(prompt)
-        response = generator(truncated_prompt, max_length=100, num_return_sequences=1, do_sample=True, temperature=0.7)
-        return response[0]['generated_text']
+        response = generator(truncated_prompt, max_length=120, num_return_sequences=1, do_sample=True, temperature=0.7)
+        generated_text = response[0]['generated_text']
+
+        # Ensure the response ends with a sentence-ending punctuation
+        if not generated_text.endswith(('.', '!', '?')):
+            last_sentence_end = max(generated_text.rfind('.'), generated_text.rfind('!'), generated_text.rfind('?'))
+
+            if last_sentence_end != -1:
+                generated_text = generated_text[:last_sentence_end + 1]
+            else:
+                generated_text += '.'
+
+        # Truncate to 150 characters if longer
+        if len(generated_text) > 150:
+            generated_text = generated_text[:147] + '...'
+
+        # Pad if shorter than 50 characters
+        if len(generated_text) < 50:
+            generated_text += " " + "Please let me know if you need more information."
+
+        return generated_text.strip()
     except Exception as e:
         logger.error(f"Error in query_model: {str(e)}")
         logger.error(traceback.format_exc())
         return "I'm sorry, but I encountered an error while trying to generate a response. Please try again later."
-
+    
 def run_chain(db, prompt: str):
     try:
         docs = db.similarity_search(prompt, k=1)  # Reduced to 2 for shorter context
